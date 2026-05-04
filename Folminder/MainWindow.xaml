@@ -1,0 +1,76 @@
+﻿<Window x:Class="Folminder.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Folminder"
+        xmlns:vm="clr-namespace:Folminder.ViewModels"
+        xmlns:controls="clr-namespace:Folminder.Controls"
+        xmlns:tb="http://www.hardcodet.net/taskbar"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="200" Width="168"
+        MinWidth="400"
+        MinHeight="200"
+        KeyDown="Window_KeyDown">
+
+    <Window.Resources>
+        <!-- NotifyIconのコンテキストメニュー -->
+        <ContextMenu x:Key="NotifyIconContextMenu">
+            <MenuItem Header="開く" Click="OpenMenuItem_Click"/>
+            <MenuItem Header="設定..." Click="SettingsMenuItem_Click"/>
+            <Separator/>
+            <MenuItem Header="終了" Click="ExitMenuItem_Click"/>
+        </ContextMenu>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- NotifyIcon -->
+        <tb:TaskbarIcon x:Name="notifyIcon"
+                        ToolTipText="Folminder"
+                        ContextMenu="{StaticResource NotifyIconContextMenu}"
+                        TrayMouseDoubleClick="NotifyIcon_TrayMouseDoubleClick"/>
+
+        <!-- ListView: MainWindowのサイズに連動 -->
+        <controls:AutoScrollListView x:Name="mainListView" Grid.Row="0" Margin="10" 
+                  ItemsSource="{Binding Items}" 
+                  SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
+                  VirtualizingStackPanel.IsVirtualizing="False"
+                  KeyDown="ListView_KeyDown">
+            <controls:AutoScrollListView.View>
+                <GridView>
+                    <GridViewColumn Header="ピン留め" Width="60">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding Pinned}" HorizontalAlignment="Center"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="キー" Width="100" DisplayMemberBinding="{Binding Key}"/>
+                    <GridViewColumn x:Name="folderColumn" Header="フォルダー">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding DisplayName}"
+                                           TextTrimming="CharacterEllipsis"
+                                           TextWrapping="NoWrap"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </controls:AutoScrollListView.View>
+        </controls:AutoScrollListView>
+
+        <!-- 下端に横に3つボタンを配置 -->
+        <Grid Grid.Row="1">
+            <Button x:Name="openExplorerButton" Content="エクスプローラーを開く" HorizontalAlignment="Left" Margin="10" Padding="10"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="10">
+                <Button x:Name="cancelButton" Content="キャンセル" Margin="0,0,5,0" Padding="10"/>
+                <Button x:Name="acceptButton" Content="OK" Margin="5,0,0,0" Padding="20,10,20,10"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
