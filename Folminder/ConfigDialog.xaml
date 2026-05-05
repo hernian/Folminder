@@ -5,35 +5,43 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Folminder"
         mc:Ignorable="d"
-        Title="設定" Height="400" Width="500"
+        Title="設定" Height="368" Width="322"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         ShowInTaskbar="False">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <Grid Margin="10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
 
-        <!-- 設定内容エリア -->
-        <GroupBox Grid.Row="0" Header="設定項目" Margin="10">
-            <StackPanel Margin="10">
-                <!-- ここに設定項目を追加 -->
-                <TextBlock Text="設定項目をここに追加してください" 
-                          VerticalAlignment="Center"
-                          HorizontalAlignment="Center"
-                          Foreground="Gray"/>
-            </StackPanel>
-        </GroupBox>
+        <!-- 第1カラム: TextBlock + CheckBox×4 -->
+        <StackPanel Grid.Column="0" Margin="0,0,10,0">
+            <TextBlock Text="修飾キー" FontWeight="Bold" Margin="0,0,0,10"/>
+            <CheckBox Content="Alt" IsChecked="{Binding Alt}" Margin="0,0,0,5"/>
+            <CheckBox Content="Control" IsChecked="{Binding Control}" Margin="0,0,0,5"/>
+            <CheckBox Content="Shift" IsChecked="{Binding Shift}" Margin="0,0,0,5"/>
+            <CheckBox Content="Win" IsChecked="{Binding Win}"/>
+        </StackPanel>
 
-        <!-- ボタンエリア -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" 
-                   HorizontalAlignment="Right" Margin="10">
+        <!-- 第2カラム: TextBlock + ListBox -->
+        <StackPanel Grid.Column="1" Margin="0,0,10,0">
+            <TextBlock Text="キー" FontWeight="Bold" Margin="0,0,0,10"/>
+            <ListBox ItemsSource="{Binding Items}" 
+                     SelectedItem="{Binding SelectedItem}"
+                     DisplayMemberPath="Name"
+                     Height="300"/>
+        </StackPanel>
+
+        <!-- 第3カラム: Button×2 -->
+        <StackPanel Grid.Column="2" VerticalAlignment="Top">
             <Button Content="OK" Width="80" Height="30" 
-                   Margin="0,0,10,0" IsDefault="True" 
-                   Click="OkButton_Click"/>
+                    Margin="0,50,0,10" IsDefault="True" 
+                    IsEnabled="{Binding IsOkButtonEnabled}"
+                    Click="OkButton_Click"/>
             <Button Content="キャンセル" Width="80" Height="30" 
-                   IsCancel="True" Click="CancelButton_Click"/>
+                    IsCancel="True" Click="CancelButton_Click"/>
         </StackPanel>
     </Grid>
 </Window>

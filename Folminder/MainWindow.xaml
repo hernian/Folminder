@@ -6,11 +6,15 @@
         xmlns:local="clr-namespace:Folminder"
         xmlns:vm="clr-namespace:Folminder.ViewModels"
         xmlns:controls="clr-namespace:Folminder.Controls"
+        xmlns:helpers="clr-namespace:Folminder.Helpers"
         xmlns:tb="http://www.hardcodet.net/taskbar"
         mc:Ignorable="d"
         Title="MainWindow" Height="200" Width="168"
         MinWidth="400"
         MinHeight="200"
+        WindowStartupLocation="Manual"
+        Visibility="Hidden"
+        ShowInTaskbar="False"
         KeyDown="Window_KeyDown">
 
     <Window.Resources>
@@ -35,34 +39,78 @@
                         ContextMenu="{StaticResource NotifyIconContextMenu}"
                         TrayMouseDoubleClick="NotifyIcon_TrayMouseDoubleClick"/>
 
-        <!-- ListView: MainWindowのサイズに連動 -->
-        <controls:AutoScrollListView x:Name="mainListView" Grid.Row="0" Margin="10" 
-                  ItemsSource="{Binding Items}" 
-                  SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
-                  VirtualizingStackPanel.IsVirtualizing="False"
-                  KeyDown="ListView_KeyDown">
-            <controls:AutoScrollListView.View>
+        <controls:FolderListView
+            x:Name="mainListView"
+            RowItemsSource="{Binding Items}"
+            SelectedRowItem="{Binding SelectedItem, Mode=TwoWay}"
+            CheckBoxColumnWidth="28"
+            KeyColumnWidth="28"
+            PreferredSizeChanged="OnFolderListViewPreferredSizeChanged"
+            VirtualizingPanel.IsVirtualizing="False"
+            ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+
+            <!-- BindingProxy：GridViewColumn に ActualWidth 系プロパティを渡すための中継 -->
+            <controls:FolderListView.Resources>
+                <helpers:BindingProxy x:Key="proxy"
+                            Data="{Binding ElementName=mainListView}"/>
+            </controls:FolderListView.Resources>
+
+            <controls:FolderListView.View>
                 <GridView>
-                    <GridViewColumn Header="ピン留め" Width="60">
+
+                    <!-- Column 1: ピン留め (CheckBox) -->
+                    <GridViewColumn
+                                Width="{Binding Data.CheckBoxColumnWidth,
+                                Source={StaticResource proxy}}">
+                        <GridViewColumn.Header>
+                            <TextBlock Text="📌" ToolTip="ピン留め"/>
+                        </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <CheckBox IsChecked="{Binding Pinned}" HorizontalAlignment="Center"/>
+                                <CheckBox IsChecked="{Binding Pinned, Mode=TwoWay}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="キー" Width="100" DisplayMemberBinding="{Binding Key}"/>
-                    <GridViewColumn x:Name="folderColumn" Header="フォルダー">
+
+                    <!-- Column 2: ショートカットキー -->
+                    <GridViewColumn
+                                Width="{Binding Data.KeyColumnWidth,
+                                Source={StaticResource proxy}}">
+                        <GridViewColumn.Header>
+                            <TextBlock Text="Key"/>
+                        </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding DisplayName}"
-                                           TextTrimming="CharacterEllipsis"
-                                           TextWrapping="NoWrap"/>
+                                <TextBlock Text="{Binding Key}"
+                                   HorizontalAlignment="Center"
+                                   FontFamily="Consolas"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
+
+                    <!-- Column 3: フォルダー名（残幅すべて） -->
+                    <GridViewColumn
+                                x:Name="folderColumn"
+                                Width="{Binding Data.FolderNameColumnWidth,
+                                Source={StaticResource proxy}}">
+                        <GridViewColumn.Header>
+                            <TextBlock Text="フォルダー"/>
+                        </GridViewColumn.Header>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding TruncatedName}"
+                                   TextTrimming="None"
+                                   ToolTip="{Binding Source.Path}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
                 </GridView>
-            </controls:AutoScrollListView.View>
-        </controls:AutoScrollListView>
+            </controls:FolderListView.View>
+
+        </controls:FolderListView>
 
         <!-- 下端に横に3つボタンを配置 -->
         <Grid Grid.Row="1">

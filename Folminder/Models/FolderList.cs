@@ -12,25 +12,31 @@ namespace Folminder.Models
 
     public class FolderList
     {
+        private List<Folder> _pinnedFolderList = new();
+
         public FolderList()
         {
-
-        
         }
 
-        public IEnumerable<Folder> GetFolderList(IReadOnlyList<Folder> pinnedFolders)
+        public void SetPinnedFolder(IEnumerable<Folder> pinnedFolders)
         {
-            foreach (var pinned in pinnedFolders)
+            _pinnedFolderList.Clear();
+            _pinnedFolderList.AddRange(pinnedFolders);
+        }
+
+        public IEnumerable<Folder> GetFolderList()
+        {
+            // 1. ピン留めフォルダーを先に
+            foreach (var pinnedFolder in _pinnedFolderList)
             {
-                yield return pinned;
+                yield return pinnedFolder;
             }
             foreach (var wp in GetWndPaths())
             {
-                var exists = pinnedFolders.Any(pf => string.Equals(pf.Path, wp.Path, StringComparison.OrdinalIgnoreCase));
+                var exists = _pinnedFolderList.Any(pf => PathHelper.Equals(pf.Path, wp.Path));
                 if (!exists)
                 {
-                    var folder = new Folder(false, wp.Path);
-                    yield return folder;
+                    yield return new Folder(pinned: false, wp.Path);
                 }
             }
         }
@@ -38,7 +44,7 @@ namespace Folminder.Models
         public IntPtr FindExplorerWindow(string path)
         {
             var hWhd = GetWndPaths()
-                .Where(wp => string.Equals(wp.Path, path, StringComparison.OrdinalIgnoreCase))
+                .Where(wp => PathHelper.Equals(wp.Path, path))
                 .Select(wp => wp.HWnd)
                 .FirstOrDefault();
             return hWhd;
@@ -46,7 +52,6 @@ namespace Folminder.Models
 
         private IReadOnlyList<WndPath> GetWndPaths()
         {
-            Debug.WriteLine($"FolderList Update");
             var folderList = new List<WndPath>();
 
             // IShellWindowsを取得
@@ -65,7 +70,6 @@ namespace Folminder.Models
                     {
                         continue;
                     }
-                    Debug.WriteLine($"    Path: {path}");
                     folderList.Add(new WndPath((IntPtr)win.HWND, path));
                 }
                 catch { }

@@ -1,4 +1,6 @@
 using System.Windows;
+using Folminder.ViewModels;
+using Folminder.Platform;
 
 namespace Folminder
 {
@@ -7,14 +9,17 @@ namespace Folminder
     /// </summary>
     public partial class ConfigDialog : Window
     {
-        public ConfigDialog()
+        private readonly ConfigDialogViewModel _viewModel;
+
+        public ConfigDialog(ConfigDialogViewModel viewModel)
         {
             InitializeComponent();
+            _viewModel = viewModel;
+            this.DataContext = _viewModel;
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
-            // 設定を保存する処理をここに追加
             this.DialogResult = true;
             this.Close();
         }

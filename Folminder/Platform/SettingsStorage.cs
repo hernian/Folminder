@@ -11,7 +11,9 @@ namespace Folminder.Platform
 {
     public static class SettingsStorage
     {
-        public static IReadOnlyList<Folder> LoadPinnedFolderList()
+        private record SerializableFolder(bool Pinned, string Path);
+
+        public static IEnumerable<Folder> LoadPinnedFolderList()
         {
             var folderList = new List<Folder>();
             try
@@ -22,7 +24,7 @@ namespace Folminder.Platform
                     var tempList = JsonSerializer.Deserialize<List<string>>(folderListJson);
                     if (tempList != null)
                     {
-                        folderList.AddRange(tempList.Select(path => new Folder(true, path)));
+                        folderList.AddRange(tempList.Select(path => new Folder(pinned: true, path)));
                     }
                 }
             }
@@ -30,7 +32,7 @@ namespace Folminder.Platform
             return folderList;
         }
 
-        public static void SavePinnedFolderList(IReadOnlyList<Folder> pinnedList)
+        public static void SavePinnedFolderList(IEnumerable<Folder> pinnedList)
         {
             var tempList = pinnedList.Select(folder => folder.Path).ToList();
             var folderListJson = JsonSerializer.Serialize(tempList);
@@ -38,12 +40,12 @@ namespace Folminder.Platform
             Properties.Settings.Default.Save();
         }
 
-        public static HotKeyHelper.HotKey LoadHotKey()
+        public static HotKey LoadHotKey()
         {
             try
             {
                 var hotKeyJson = Properties.Settings.Default.HotKey;
-                var hotKey = JsonSerializer.Deserialize<HotKeyHelper.HotKey>(hotKeyJson);
+                var hotKey = JsonSerializer.Deserialize<HotKey>(hotKeyJson);
                 if (hotKey != null)
                 {
                     return hotKey;
@@ -51,11 +53,10 @@ namespace Folminder.Platform
             }
             catch { }
             //デフォルト値
-            uint vKey = (uint)KeyInterop.VirtualKeyFromKey(Key.F);
-            return new HotKeyHelper.HotKey(Alt: true, Control: true, Shift: false, Win: false, vKey);
+            return HotKey.Default;
         }
 
-        public static void SaveHotKey(HotKeyHelper.HotKey hotKey)
+        public static void SaveHotKey(HotKey hotKey)
         {
             var hotKeyJson = JsonSerializer.Serialize(hotKey);
             Properties.Settings.Default.HotKey = hotKeyJson;

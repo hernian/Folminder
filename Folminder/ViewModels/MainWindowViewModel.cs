@@ -1,5 +1,7 @@
 ﻿using Folminder.Models;
 using Folminder.Platform;
+using System.Collections;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -8,18 +10,20 @@ namespace Folminder.ViewModels
 {
     public class MainWindowViewModel : INotifyPropertyChanged
     {
+        private static readonly string KEY_SEQ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+
         public event PropertyChangedEventHandler? PropertyChanged;
         public event EventHandler? HideWindowRequested;
 
-        public ObservableCollection<RowItem> Items
+        public ObservableCollection<FolderViewModel> Items
         {
             get => _items;
         }
 
-        private readonly ObservableCollection<RowItem> _items = new();
+        private readonly ObservableCollection<FolderViewModel> _items = new();
 
-        private RowItem? _selectedItem;
-        public RowItem? SelectedItem
+        private FolderViewModel? _selectedItem;
+        public FolderViewModel? SelectedItem
         {
             get => _selectedItem;
             set
@@ -31,35 +35,28 @@ namespace Folminder.ViewModels
                 }
             }
         }
-        public double MaxShortNameWidth { get; set; }
 
         private readonly FolderList _folderList;
-        private readonly IWindowMetricsService _windowMetrics;
-        private readonly List<Folder> _pinnedList = new();
 
-        public MainWindowViewModel(FolderList folderList, IWindowMetricsService windowMetrics)
+        public MainWindowViewModel(FolderList folderList)
         {
             _folderList = folderList;
-            _windowMetrics = windowMetrics;
-            _pinnedList.AddRange(SettingsStorage.LoadPinnedFolderList());
+            _folderList.SetPinnedFolder(SettingsStorage.LoadPinnedFolderList());
         }
 
         public void UpdateCommand()
         {
-            var shortPathBuilder = _windowMetrics.CreateShortPathBuilder();
-            var folders = _folderList.GetFolderList(_pinnedList);
             _items.Clear();
-            var ch = 'A';
-            foreach (var folder in folders)
+            var index = 0;
+            var sortedFolders = _folderList.GetFolderList().OrderBy(x => x).Take(KEY_SEQ.Length);
+            foreach (var folder in sortedFolders)
             {
-                Debug.WriteLine($"RowItem {folder.Path}");
-                var displayName = shortPathBuilder.GetShortName(folder.Segments);
-                var item = new RowItem(ch.ToString(), displayName, folder);
+                var key = KEY_SEQ[index].ToString();
+                var item = new FolderViewModel(key, folder);
                 _items.Add(item);
+                index++;
             }
-            this.MaxShortNameWidth = shortPathBuilder.ActualMaxWidth;
             this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Items)));
-            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(MaxShortNameWidth)));
         }
 
         public void ActivateCommand()
@@ -68,7 +65,7 @@ namespace Folminder.ViewModels
             {
                 return;
             }
-            var path = this.SelectedItem.Folder.Path;
+            var path = this.SelectedItem.Path;
             var hWndFolder = _folderList.FindExplorerWindow(path);
             if (hWndFolder != IntPtr.Zero)
             {
@@ -78,9 +75,9 @@ namespace Folminder.ViewModels
             {
                 ShellExecuteHelper.OpenFolder(path);
             }
-            _pinnedList.Clear();
-            _pinnedList.AddRange(GetPinnedList());
-            SettingsStorage.SavePinnedFolderList(_pinnedList);
+            var pinnedFolders = _items.Where(i => i.Pinned).Select(i => i.Source.WithPinned(pinned: true)).ToList();
+            _folderList.SetPinnedFolder(pinnedFolders);
+            SettingsStorage.SavePinnedFolderList(pinnedFolders);
             this.HideWindowRequested?.Invoke(this, EventArgs.Empty);
         }
 
@@ -106,19 +103,6 @@ namespace Folminder.ViewModels
             }
 
             return false;
-        }
-
-        private IReadOnlyList<Folder> GetPinnedList()
-        {
-            var pinnedList = new List<Folder>();
-            foreach (var rowItem in _items)
-            {
-                if (rowItem.Pinned)
-                {
-                    pinnedList.Add(rowItem.Folder);
-                }
-            }
-            return pinnedList;
         }
     }
 }
