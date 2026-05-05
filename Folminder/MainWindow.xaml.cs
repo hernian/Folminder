@@ -19,7 +19,8 @@ namespace Folminder
         private const int HOTKEY_ID = 1;
 
         private MainWindowViewModel _viewModel;
-        private bool _isSourceInitialized = false;
+        private bool _isActivated = false;
+        private bool _isShowed = false;
 
         public MainWindow(MainWindowViewModel viewModel)
         {
@@ -28,7 +29,7 @@ namespace Folminder
             this.DataContext = viewModel;
             _viewModel = viewModel;
             _viewModel.PropertyChanged += MainWindowViewModel_PropertyChanged;
-            _viewModel.HideWindowRequested += viewModel_HideWindowRequested;
+            _viewModel.HideWindowRequested += (_, __) => this.MinimizeAndHide();
 
             this.SourceInitialized += MainWindow_SourceInitialized;
             this.Loaded += MainWindow_Loaded;
@@ -37,7 +38,7 @@ namespace Folminder
             mainListView.RowDoubleClick += (_, __) => _viewModel.ActivateCommand();
             mainListView.PreferredSizeChanged += mainListView_PreferredSizeChanged;
             acceptButton.Click += (_, __) => _viewModel.ActivateCommand();
-            cancelButton.Click += (_, __) => this.Hide();
+            cancelButton.Click += (_, __) => this.MinimizeAndHide();
             openExplorerButton.Click += (_, __) => _viewModel.OpenExplorerCommand();
         }
 
@@ -58,16 +59,27 @@ namespace Folminder
 
         private void MainWindow_SourceInitialized(object? sender, EventArgs e)
         {
-            Debug.WriteLine("MainWindow_SourceInitialized");
-            _isSourceInitialized = true;
+            Debug.WriteLine($"MainWindow_SourceInitialized. isActivated: {_isActivated}");
 
-            var h = new WindowInteropHelper(this).Handle;
+            var helper = new WindowInteropHelper(this);
+            var h = helper.Handle;
             Debug.WriteLine($"MainWindow_SourceInitialized. hWnd: {h:x8}");
+
+            // 先にWndProcフックを追加してからHotKeyを登録
+            // PresentationSource.FromVisualではなくHwndSource.FromHwndを使う
+            var hwndSource = HwndSource.FromHwnd(h);
+            if (hwndSource != null)
+            {
+                hwndSource.AddHook(WndProc);
+                Debug.WriteLine("WndProc hook added successfully");
+            }
+            else
+            {
+                Debug.WriteLine("ERROR: Failed to get HwndSource");
+            }
+
             var hotKey = SettingsStorage.LoadHotKey();
             HotKeyHelper.RegisterHotKey(this, HOTKEY_ID, hotKey);
-
-            var hwndSource = PresentationSource.FromVisual(this) as HwndSource;
-            hwndSource?.AddHook(WndProc);
 
             /*
             // まだ表示されていない状態でレイアウトを確定させる
@@ -80,7 +92,7 @@ namespace Folminder
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            Debug.WriteLine("MainWindow_Loaded");
+            Debug.WriteLine($"MainWindow_Loaded. isActivated: {_isActivated}");
             /*
             Dispatcher.BeginInvoke(new Action(() =>
             {
@@ -88,20 +100,6 @@ namespace Folminder
                 SetWindowCenter();
             }), DispatcherPriority.Render);
             */
-        }
-
-        private void viewModel_HideWindowRequested(object? sender, EventArgs e)
-        {
-            this.Hide();
-            // 次回表示するときに必ず小さい状態から大きく広げる方向で調整が入るようにする
-            // 一瞬大きなウィンドウが出てしまうと驚いてしまう
-            this.Width = this.MinWidth;
-            this.Height = this.MinHeight;
-            // workingAreaの中央に配置
-            var workingArea = ScreenHelper.GetWorkingArea(this);
-            this.Left = Math.Max(workingArea.Left + (workingArea.Width - this.Width) / 2, 0.0);
-            this.Top = Math.Max(workingArea.Top + (workingArea.Height - this.Height) / 2, 0.0);
-
         }
 
         private void mainListView_PreferredSizeChanged(object? sender, EventArgs e)
@@ -157,47 +155,74 @@ namespace Folminder
 
         private void AdjustWindow()
         {
-            Debug.WriteLine($"AdjustWindow. isSourceInitialized: {_isSourceInitialized}");
-            if (!_isSourceInitialized)
+            Debug.WriteLine($"AdjustWindow. isActivated: {_isActivated}");
+            if (!_isActivated)
             {
                 return;
             }
-            /*
-            this.Show();
-            this.WindowState = WindowState.Normal;
-            this.ShowInTaskbar = true;
-            this.Activate();
-            */
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                /*
-                // 実際のサイズを計算
-                var workingArea = ScreenHelper.GetWorkingArea(this);
-                var widthGap = this.ActualWidth - mainListView.ActualWidth;
-                var heightGap = this.ActualHeight - mainListView.ActualHeight;
-                var newWidth = widthGap + mainListView.PreferredWidth;
-                var newHeight = heightGap + mainListView.PreferredHeight;
 
+            // 実際のサイズを計算
+            var workingArea = ScreenHelper.GetWorkingArea(this);
+            var widthGap = this.ActualWidth - mainListView.ActualWidth;
+            var heightGap = this.ActualHeight - mainListView.ActualHeight;
+            var newWidth = widthGap + mainListView.PreferredWidth;
+            var newHeight = heightGap + mainListView.PreferredHeight;
+            var newLeft = Math.Max(workingArea.Left + (workingArea.Width - newWidth) / 2, workingArea.Left);
+            var newTop = Math.Max(workingArea.Top + (workingArea.Height - newHeight) / 2, workingArea.Top);
+            Debug.WriteLine($"AdjustWindow. WorkingArea: left: {workingArea.Left} top: {workingArea.Top} width: {workingArea.Width} height: {workingArea.Height}");
+            Debug.WriteLine($"AdjustWindow. left: {newLeft}, top: {newTop}, width: {newWidth}, height: {newHeight}");
+            if (!_isShowed)
+            {
+                this.Show();
+                _isShowed = true;
+            }
+            if (this.WindowState != WindowState.Normal)
+            {
+                this.WindowState = WindowState.Normal;
+            }
+            // WPFだと非表示のWindowは位置・サイズが不確定になるらしい
+            // なので Win32 API SetWindowPos を使う。その後、WPFの位置・サイズも指定しておく
+            var swp = new WinApiHelper.SetWindowPosParam(
+                ChangeSize: true,
+                ChangePosition: true,
+                Visibility: WinApiHelper.WindowVisibility.Show,
+                Left: newLeft,
+                Top: newTop,
+                Width: newWidth,
+                Height: newHeight);
+            WinApiHelper.SetWindowPos(this, swp);
+            this.Activate();
+            Dispatcher.BeginInvoke(() =>
+            {
                 Debug.WriteLine($"=== AdjustWindow: newWidth={newWidth:F1}, newHeight={newHeight:F1} ===");
 
                 // サイズと位置を設定
                 this.Width = newWidth;
                 this.Height = newHeight;
-                this.Left = workingArea.Left + (workingArea.Width - newWidth) / 2;
-                this.Top = workingArea.Top + (workingArea.Height - newHeight) / 2;
-                */
+                this.Left = newLeft;
+                this.Top = newTop;
+                this.Opacity = 1;
                 if (mainListView.Items.Count > 0)
                 {
                     mainListView.SelectedIndex = 0;
                     var firstItem = mainListView.ItemContainerGenerator.ContainerFromIndex(0) as ListViewItem;
                     firstItem?.Focus();
                 }
-            }), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+            }, DispatcherPriority.Render);
+        }
+        private void MinimizeAndHide()
+        {
+            Debug.WriteLine($"MinimizeAndHide.");
+            // WPFのWindowの位置・サイズは非表示になると不確定になるらしい
+            // なのでWin32 API SetWindowPos で非表示にし、再度表示するときも SetWindowPosを使う
+            var swp = new WinApiHelper.SetWindowPosParam(Visibility: WinApiHelper.WindowVisibility.Hide);
+            WinApiHelper.SetWindowPos(this, swp);
+            _isActivated = false;
         }
 
         private void OpenMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            _viewModel!.UpdateCommand();
+            UpdateContents();
         }
 
         private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
@@ -209,6 +234,8 @@ namespace Folminder
             if (configDialog.ShowDialog() == true)
             {
                 hotKey = configDialogViewModel.GetHotKey();
+                // 古いHotKeyを解除してから新しいものを登録
+                HotKeyHelper.UnregisterHotKey(this, HOTKEY_ID);
                 HotKeyHelper.RegisterHotKey(this, HOTKEY_ID, hotKey);
                 SettingsStorage.SaveHotKey(hotKey);
             }
@@ -221,7 +248,7 @@ namespace Folminder
 
         private void NotifyIcon_TrayMouseDoubleClick(object sender, RoutedEventArgs e)
         {
-            _viewModel.UpdateCommand();
+            UpdateContents();
         }
 
         private void ListView_KeyDown(object sender, KeyEventArgs e)
@@ -274,12 +301,18 @@ namespace Folminder
                 Debug.WriteLine($"WM_HOTKEY. ID: {wParam.ToInt32()}");
                 if (wParam.ToInt32() == HOTKEY_ID)
                 {
-                    _viewModel.UpdateCommand();
+                    UpdateContents();
                     handled = true;
                 }
             }
 
             return IntPtr.Zero;
+        }
+
+        private void UpdateContents()
+        {
+            _isActivated = true;
+            _viewModel.UpdateCommand();
         }
     }
 }

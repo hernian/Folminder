@@ -19,10 +19,10 @@ namespace Folminder
             var folderList = new FolderList();
             var viewModel = new MainWindowViewModel(folderList);
             var mainWindow = new MainWindow(viewModel);
+
+            // EnsureHandleでmainWindowのSourceInitializedイベントを発火させる
             var helper = new WindowInteropHelper(mainWindow);
-            Debug.WriteLine("before EnsureHandle");
             helper.EnsureHandle();
-            Debug.WriteLine("after EnsureHandle");
 
             this.MainWindow = mainWindow;
         }
