@@ -63,6 +63,7 @@ namespace Folminder.ViewModels
                 return;
             }
             var path = this.SelectedItem.Path;
+#if False
             var hWndFolder = _folderList.FindExplorerWindow(path);
             if (hWndFolder != IntPtr.Zero)
             {
@@ -72,6 +73,9 @@ namespace Folminder.ViewModels
             {
                 ShellExecuteHelper.OpenFolder(path);
             }
+#endif
+            // VerbにOpenを指定してパス名を与えればExplorerが良くしてくれる。
+            ShellExecuteHelper.OpenFolder(path);
             var pinnedFolders = _items.Where(i => i.Pinned).Select(i => i.Source.WithPinned(pinned: true)).ToList();
             _folderList.SetPinnedFolder(pinnedFolders);
             SettingsStorage.SavePinnedFolderList(pinnedFolders);
@@ -80,7 +84,8 @@ namespace Folminder.ViewModels
 
         public void OpenExplorerCommand()
         {
-            ShellExecuteHelper.OpenFolder();
+            // ShellExecuteHelper.OpenExplorer();
+            ShellExecuteHelper.OpenFolder(ShellExecuteHelper.GUID_PC);
             this.HideWindowRequested?.Invoke(this, EventArgs.Empty);
         }
 
