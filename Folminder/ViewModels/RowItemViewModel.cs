@@ -1,6 +1,4 @@
-﻿using Folminder.Models;
-using System.ComponentModel;
-using System.IO;
+﻿using System.ComponentModel;
 using System.Windows.Media;
 
 namespace Folminder.ViewModels

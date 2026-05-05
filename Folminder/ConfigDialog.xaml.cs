@@ -1,6 +1,5 @@
-using System.Windows;
 using Folminder.ViewModels;
-using Folminder.Platform;
+using System.Windows;
 
 namespace Folminder
 {

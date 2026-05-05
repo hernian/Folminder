@@ -42,21 +42,6 @@ namespace Folminder
             openExplorerButton.Click += (_, __) => _viewModel.OpenExplorerCommand();
         }
 
-        private bool IsHandleCreated()
-        {
-            var source = (HwndSource)HwndSource.FromVisual(this);
-            return source?.Handle != IntPtr.Zero;
-        }
-
-        private void SetWindowCenter()
-        {
-            var workingArea = ScreenHelper.GetWorkingArea(this);
-            var w = this.ActualWidth;
-            var h = this.ActualHeight;
-            this.Left = Math.Max(workingArea.Left + (workingArea.Width - w) / 2, 0);
-            this.Top = Math.Max(workingArea.Top + (workingArea.Height - h) / 2, 0);
-        }
-
         private void MainWindow_SourceInitialized(object? sender, EventArgs e)
         {
             Debug.WriteLine($"MainWindow_SourceInitialized. isActivated: {_isActivated}");

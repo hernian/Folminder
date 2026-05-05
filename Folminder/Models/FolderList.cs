@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using SHDocVw;
 using System.Data;
-using System.Diagnostics;
-using System.Text;
-using SHDocVw;
-using Shell32;
 
 namespace Folminder.Models
 {

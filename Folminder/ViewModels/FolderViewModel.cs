@@ -1,8 +1,6 @@
 ﻿using Folminder.Models;
-using System.CodeDom;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Windows.Controls;
 
 namespace Folminder.ViewModels
 {

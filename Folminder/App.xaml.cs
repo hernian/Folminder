@@ -1,11 +1,7 @@
-﻿using Folminder.ViewModels;
-using Folminder.Models;
-using System.Configuration;
-using System.Data;
+﻿using Folminder.Models;
+using Folminder.ViewModels;
 using System.Windows;
-using Folminder.Platform;
 using System.Windows.Interop;
-using System.Diagnostics;
 
 namespace Folminder
 {

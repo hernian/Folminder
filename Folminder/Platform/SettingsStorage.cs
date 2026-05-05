@@ -1,11 +1,5 @@
 ﻿using Folminder.Models;
-using Folminder.Platform;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Text.Json;
-using System.Windows.Forms;
-using System.Windows.Input;
 
 namespace Folminder.Platform
 {

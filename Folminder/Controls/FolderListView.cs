@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Folminder.Helpers;
+using Folminder.ViewModels;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
-using Folminder.Models;
-using Folminder.ViewModels;
-using Folminder.Helpers;
 
 namespace Folminder.Controls;
 

@@ -1,12 +1,6 @@
 ﻿using Folminder.Models;
-using Folminder.Platform;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Security.RightsManagement;
-using System.Text;
 using System.Windows.Input;
 
 namespace Folminder.ViewModels

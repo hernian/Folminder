@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.DirectoryServices.ActiveDirectory;
-using System.Runtime.CompilerServices;
-using System.Security.RightsManagement;
-using System.Text;
-
-namespace Folminder.Models
+﻿namespace Folminder.Models
 {
     public class Folder : IComparable<Folder>
     {
