@@ -116,8 +116,8 @@
         <Grid Grid.Row="1">
             <Button x:Name="openExplorerButton" Content="エクスプローラーを開く" HorizontalAlignment="Left" Margin="10" Padding="10"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="10">
-                <Button x:Name="cancelButton" Content="キャンセル" Margin="0,0,5,0" Padding="10"/>
-                <Button x:Name="acceptButton" Content="OK" Margin="5,0,0,0" Padding="20,10,20,10"/>
+                <Button x:Name="cancelButton" Content="キャンセル" Margin="0,0,5,0" Padding="10" IsCancel="True"/>
+                <Button x:Name="acceptButton" Content="OK" Margin="5,0,0,0" Padding="20,10,20,10" IsDefault="True"/>
             </StackPanel>
         </Grid>
     </Grid>
