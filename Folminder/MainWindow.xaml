@@ -10,7 +10,7 @@
         xmlns:tb="http://www.hardcodet.net/taskbar"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel, IsDesignTimeCreatable=False}"
-        Title="MainWindow" Height="200" Width="168"
+        Title="Folminder" Height="200" Width="168"
         MinWidth="400"
         MinHeight="200"
         WindowStartupLocation="CenterScreen"
@@ -26,6 +26,7 @@
         <ContextMenu x:Key="NotifyIconContextMenu">
             <MenuItem Header="開く" Command="{Binding Data.OpenWindowCommand, Source={StaticResource ViewModelProxy}}"/>
             <MenuItem Header="設定..." Command="{Binding Data.ShowSettingsCommand, Source={StaticResource ViewModelProxy}}"/>
+            <MenuItem Header="バージョン情報..." Click="AboutMenuItem_Click"/>
             <Separator/>
             <MenuItem Header="終了" Command="{Binding Data.ExitCommand, Source={StaticResource ViewModelProxy}}"/>
         </ContextMenu>
@@ -120,11 +121,11 @@
 
         <!-- 下端に横に3つボタンを配置 -->
         <Grid Grid.Row="1">
-            <Button x:Name="OpenExplorerButton" Content="エクスプローラーを開く" HorizontalAlignment="Left" Margin="10" Padding="10" Command="{Binding OpenExplorerCommand}"/>
+            <Button x:Name="OpenExplorerButton" Content="エクスプローラーを開く" HorizontalAlignment="Left" Margin="10" Padding="10,5,10,5" Command="{Binding OpenExplorerCommand}"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="10">
-                <Button x:Name="AcceptButton" Content="OK" Margin="3,0,3,0" Padding="20,10,20,10" IsDefault="True" Command="{Binding AcceptCommand}"/>
-                <Button x:Name="ApplyButton" Content="適用" Margin="3,0,3,0" Padding="20,10,20,10" Command="{Binding ApplyCommand}"/>
-                <Button x:Name="CancelButton" Content="キャンセル" Margin="3,0,0,0" Padding="10" IsCancel="True" Command="{Binding CancelCommand}"/>
+                <Button x:Name="AcceptButton" Content="OK" Margin="3,0,3,0" IsDefault="True" Command="{Binding AcceptCommand}" Width="60"/>
+                <Button x:Name="ApplyButton" Content="適用" Margin="3,0,3,0" Command="{Binding ApplyCommand}" Width="60"/>
+                <Button x:Name="CancelButton" Content="キャンセル" Margin="3,0,0,0" IsCancel="True" Command="{Binding CancelCommand}" Width="60"/>
             </StackPanel>
         </Grid>
     </Grid>

@@ -3,8 +3,10 @@ using Folminder.Services;
 using Folminder.ViewModels;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+//using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
@@ -248,7 +250,34 @@ namespace Folminder
             UpdateContents();
         }
 
+        private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            // sender から MenuItem を取得
+            var menuItem = sender as MenuItem;
+            if (menuItem == null) return;
 
+            // MessageBox表示中に再度クリックされないようにMenuItemを無効化
+            menuItem.IsEnabled = false;
+            try
+            {
+                var asm = Assembly.GetExecutingAssembly();
+                var name = asm.GetName();
+                var version = name.Version;
+                var company = asm.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "Unknown";
+                var product = asm.GetCustomAttribute<AssemblyProductAttribute>()?.Product ?? "Unknown";
+                var message = $"{product}\nVer. {version}\nProduced by {company}. 2026";
+                MessageBox.Show(
+                    this,
+                    $"Folminder by {company}.\nVer. {version}",
+                    "Folminderについて",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            finally
+            {
+                // MessageBoxを閉じたら再度有効化
+                menuItem.IsEnabled = true;
+            }
+        }
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
