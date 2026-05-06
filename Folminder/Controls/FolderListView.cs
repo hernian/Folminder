@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -159,6 +160,7 @@ public class FolderListView : ListView
     {
         SizeChanged += OnSizeChanged;
         SelectionChanged += OnSelectionChanged;
+        PreviewKeyDown += OnPreviewKeyDown;
     }
 
     public override void OnApplyTemplate()
@@ -195,6 +197,10 @@ public class FolderListView : ListView
     /// </summary>
     private void UpdateFolderNameColumnWidth()
     {
+        // デザインモード時やActualWidthが0の場合は処理をスキップ
+        if (System.ComponentModel.DesignerProperties.GetIsInDesignMode(this) || ActualWidth <= 0)
+            return;
+
         var (typeface, fontSize, ppd) = GetTextMetrics();
 
         // ピン留め列とキー列は固定幅（XAMLでバインドされている値）
@@ -274,14 +280,26 @@ public class FolderListView : ListView
 
         if (source != null)
         {
-            var (typeface, fontSize, ppd) = GetTextMetrics();
-            double textWidth = GetTextWidthFromColumnWidth();
-
-            foreach (var item in source)
+            // デザインモード時はテキストメトリクスの計算をスキップ
+            if (System.ComponentModel.DesignerProperties.GetIsInDesignMode(this))
             {
-                var vm = new RowItemViewModel(item);
-                vm.UpdateTruncatedName(textWidth, typeface, fontSize, ppd);
-                _internalItems.Add(vm);
+                foreach (var item in source)
+                {
+                    var vm = new RowItemViewModel(item);
+                    _internalItems.Add(vm);
+                }
+            }
+            else
+            {
+                var (typeface, fontSize, ppd) = GetTextMetrics();
+                double textWidth = GetTextWidthFromColumnWidth();
+
+                foreach (var item in source)
+                {
+                    var vm = new RowItemViewModel(item);
+                    vm.UpdateTruncatedName(textWidth, typeface, fontSize, ppd);
+                    _internalItems.Add(vm);
+                }
             }
         }
 
@@ -291,6 +309,10 @@ public class FolderListView : ListView
     private void OnSourceCollectionChanged(
         object? sender, NotifyCollectionChangedEventArgs e)
     {
+        // デザインモード時は処理をスキップ
+        if (System.ComponentModel.DesignerProperties.GetIsInDesignMode(this))
+            return;
+
         var (typeface, fontSize, ppd) = GetTextMetrics();
         double textWidth = GetTextWidthFromColumnWidth();
 
@@ -423,6 +445,39 @@ public class FolderListView : ListView
     #endregion
 
     // =====================================================================
+    #region キー入力処理
+    // =====================================================================
+
+    /// <summary>
+    /// キー入力を処理し、マッチする項目を選択する。
+    /// 英数字キーが押された場合、対応するKeyを持つ項目を選択状態にする。
+    /// </summary>
+    private void OnPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        // 押されたキーを文字列に変換（例: Key.A -> "A"）
+        string keyString = e.Key.ToString();
+
+        // マッチする項目を検索
+        var matchingItem = _internalItems.FirstOrDefault(
+            item => item.Key == keyString);
+
+        if (matchingItem != null)
+        {
+            // 選択項目を更新（SelectedRowItemも自動的に同期される）
+            SelectedItem = matchingItem;
+
+            // フォーカスを当てる
+            var container = ItemContainerGenerator
+                .ContainerFromItem(matchingItem) as ListViewItem;
+            container?.Focus();
+
+            e.Handled = true; // イベントを処理済みとしてマーク
+        }
+    }
+
+    #endregion
+
+    // =====================================================================
     #region PreferredSize の計算とイベント発火
     // =====================================================================
 
@@ -432,12 +487,20 @@ public class FolderListView : ListView
     /// </summary>
     private void RecalculatePreferredSizeDeferred()
     {
+        // デザインモード時は処理をスキップ
+        if (System.ComponentModel.DesignerProperties.GetIsInDesignMode(this))
+            return;
+
         // DispatcherPriority.Loaded: レイアウト完了後・描画前に実行される
         Dispatcher.InvokeAsync(RecalculatePreferredSize, DispatcherPriority.Loaded);
     }
 
     private void RecalculatePreferredSize()
     {
+        // デザインモード時は処理をスキップ
+        if (System.ComponentModel.DesignerProperties.GetIsInDesignMode(this))
+            return;
+
         double newW = CalculatePreferredWidth();
         double newH = CalculatePreferredHeight();
 

@@ -1,4 +1,5 @@
 ﻿using Folminder.Models;
+using Folminder.Services;
 using Folminder.ViewModels;
 using System.Windows;
 using System.Windows.Interop;
@@ -10,11 +11,13 @@ namespace Folminder
     /// </summary>
     public partial class App : Application
     {
+
         private void Application_Startup(object sender, StartupEventArgs e)
         {
             var folderList = new FolderList();
-            var viewModel = new MainWindowViewModel(folderList);
-            var mainWindow = new MainWindow(viewModel);
+            var hotKeyService = new HotKeyService();
+            var viewModel = new MainWindowViewModel(folderList, hotKeyService);
+            var mainWindow = new MainWindow(viewModel, hotKeyService);
 
             // EnsureHandleでmainWindowのSourceInitializedイベントを発火させる
             var helper = new WindowInteropHelper(mainWindow);

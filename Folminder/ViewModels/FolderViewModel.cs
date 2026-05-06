@@ -1,34 +1,26 @@
-﻿using Folminder.Models;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Folminder.Models;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace Folminder.ViewModels
 {
-    public class FolderViewModel(string key, Folder source) : INotifyPropertyChanged
+    public partial class FolderViewModel : ObservableObject
     {
-        private bool _pinned = source.Pinned;
+        [ObservableProperty]
+        private bool pinned;
 
-        public event PropertyChangedEventHandler? PropertyChanged;
-        private void NotifyPropertyChanged([CallerMemberName] String propertyName = "")
+        public string Key { get; }
+        public string Path { get; }
+
+        public Folder Source { get; }
+
+        public FolderViewModel(string key, Folder source)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            this.Pinned = source.Pinned;
+            this.Key = key;
+            this.Path = source.Path;
+            this.Source = source;
         }
-
-        public bool Pinned {
-            get => _pinned;
-            set
-            {
-                if (this._pinned != value)
-                {
-                    this._pinned = value;
-                    NotifyPropertyChanged();
-                }
-            }
-        }
-
-        public string Key { get; } = key;
-        public string Path { get; } = source.Path;
-
-        public Folder Source { get; } = source;
     }
 }

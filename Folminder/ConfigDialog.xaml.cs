@@ -1,4 +1,5 @@
 using Folminder.ViewModels;
+using System.ComponentModel;
 using System.Windows;
 
 namespace Folminder
@@ -15,18 +16,33 @@ namespace Folminder
             InitializeComponent();
             _viewModel = viewModel;
             this.DataContext = _viewModel;
+
+            // ViewModelのDialogResultプロパティの変更を監視
+            _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+
+            // ウィンドウが表示された後に選択項目へスクロール
+            this.ContentRendered += ConfigDialog_ContentRendered;
         }
 
-        private void OkButton_Click(object sender, RoutedEventArgs e)
+        private void ConfigDialog_ContentRendered(object? sender, EventArgs e)
         {
-            this.DialogResult = true;
-            this.Close();
+            // 選択項目が存在する場合、その項目へスクロール
+            if (_viewModel.SelectedItem != null)
+            {
+                KeyListBox.ScrollIntoView(_viewModel.SelectedItem);
+            }
         }
 
-        private void CancelButton_Click(object sender, RoutedEventArgs e)
+        private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            this.DialogResult = false;
-            this.Close();
+            if (e.PropertyName == nameof(ConfigDialogViewModel.DialogResult))
+            {
+                if (_viewModel.DialogResult.HasValue)
+                {
+                    this.DialogResult = _viewModel.DialogResult;
+                    this.Close();
+                }
+            }
         }
     }
 }

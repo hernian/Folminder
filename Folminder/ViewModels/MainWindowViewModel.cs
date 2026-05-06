@@ -1,43 +1,48 @@
-﻿using Folminder.Models;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Folminder.Models;
 using Folminder.Platform;
+using Folminder.Services;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 
 namespace Folminder.ViewModels
 {
-    public class MainWindowViewModel : INotifyPropertyChanged
+    public partial class MainWindowViewModel : ObservableObject
     {
         private static readonly string KEY_SEQ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
 
-        public event PropertyChangedEventHandler? PropertyChanged;
         public event EventHandler? HideWindowRequested;
+        public event EventHandler<ConfigDialogViewModel>? SettingsDialogRequested;
+        public event EventHandler? OpenWindowRequested;
+        public event EventHandler? ExitApplicationRequested;
 
-        public ObservableCollection<FolderViewModel> Items
-        {
-            get => _items;
-        }
+        private bool _isSettingsDialogOpen = false;
+
+        public ObservableCollection<FolderViewModel> Items => _items;
 
         private readonly ObservableCollection<FolderViewModel> _items = new();
 
-        private FolderViewModel? _selectedItem;
-        public FolderViewModel? SelectedItem
+        [ObservableProperty]
+        private FolderViewModel? selectedItem;
+
+        protected override void OnPropertyChanged(PropertyChangedEventArgs e)
         {
-            get => _selectedItem;
-            set
+            base.OnPropertyChanged(e);
+            if (e.PropertyName == nameof(SelectedItem))
             {
-                if (_selectedItem != value)
-                {
-                    _selectedItem = value;
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedItem)));
-                }
+                AcceptCommand.NotifyCanExecuteChanged();
+                ApplyCommand.NotifyCanExecuteChanged();
             }
         }
 
         private readonly FolderList _folderList;
+        private readonly HotKeyService _hotKeyService;
 
-        public MainWindowViewModel(FolderList folderList)
+        public MainWindowViewModel(FolderList folderList, HotKeyService hotKeyService)
         {
             _folderList = folderList;
+            _hotKeyService = hotKeyService;
             _folderList.SetPinnedFolder(SettingsStorage.LoadPinnedFolderList());
         }
 
@@ -53,36 +58,68 @@ namespace Folminder.ViewModels
                 _items.Add(item);
                 index++;
             }
-            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Items)));
+            this.OnPropertyChanged(nameof(Items));
         }
 
-        public void ActivateCommand()
+        [RelayCommand(CanExecute = nameof(CanShowSettings))]
+        private void ShowSettings()
         {
-            if (this.SelectedItem == null)
-            {
-                return;
-            }
-            var path = this.SelectedItem.Path;
-#if False
-            var hWndFolder = _folderList.FindExplorerWindow(path);
-            if (hWndFolder != IntPtr.Zero)
-            {
-                WinApiHelper.ActivateWindow(hWndFolder);
-            }
-            else
-            {
-                ShellExecuteHelper.OpenFolder(path);
-            }
-#endif
+            var currentHotKey = _hotKeyService.CurrentHotKey;
+            var configDialogViewModel = new ConfigDialogViewModel(currentHotKey);
+
+            _isSettingsDialogOpen = true;
+            ShowSettingsCommand.NotifyCanExecuteChanged();
+
+            // Viewにダイアログ表示を要求
+            SettingsDialogRequested?.Invoke(this, configDialogViewModel);
+
+            _isSettingsDialogOpen = false;
+            ShowSettingsCommand.NotifyCanExecuteChanged();
+        }
+
+        private bool CanShowSettings()
+        {
+            return !_isSettingsDialogOpen;
+        }
+
+        [RelayCommand]
+        private void OpenWindow()
+        {
+            this.OpenWindowRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        [RelayCommand]
+        private void Exit()
+        {
+            this.ExitApplicationRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>
+        /// 選択されたフォルダーを開き、ピン留めを保存してウィンドウを閉じます
+        /// </summary>
+        [RelayCommand(CanExecute = nameof(CanActivate))]
+        private void Accept()
+        {
             // VerbにOpenを指定してパス名を与えればExplorerが良くしてくれる。
+            var path = this.SelectedItem!.Path;
             ShellExecuteHelper.OpenFolder(path);
-            var pinnedFolders = _items.Where(i => i.Pinned).Select(i => i.Source.WithPinned(pinned: true)).ToList();
-            _folderList.SetPinnedFolder(pinnedFolders);
-            SettingsStorage.SavePinnedFolderList(pinnedFolders);
+            SavePinnedFolder();
             this.HideWindowRequested?.Invoke(this, EventArgs.Empty);
         }
 
-        public void OpenExplorerCommand()
+        private bool CanActivate()
+        {
+            return SelectedItem != null;
+        }
+
+        [RelayCommand]
+        private void Cancel()
+        {
+            this.HideWindowRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        [RelayCommand]
+        private void OpenExplorer()
         {
             // ShellExecuteHelper.OpenExplorer();
             ShellExecuteHelper.OpenFolder(ShellExecuteHelper.GUID_PC);
@@ -90,21 +127,24 @@ namespace Folminder.ViewModels
         }
 
         /// <summary>
-        /// キー入力を処理し、マッチする項目を選択状態にする
+        /// ピン留めの状態を保存します
         /// </summary>
-        /// <param name="keyString">押されたキーの文字列表現（例: "A", "B"）</param>
-        /// <returns>マッチする項目が見つかった場合true</returns>
-        public bool ProcessKeyInput(string keyString)
+        [RelayCommand(CanExecute = nameof(CanActivate))]
+        private void Apply()
         {
-            var matchingItem = _items.FirstOrDefault(item => item.Key == keyString);
+            SavePinnedFolder();
+            // ウィンドウを閉じない（適用ボタンの一般的な動作）
+        }
 
-            if (matchingItem != null)
-            {
-                SelectedItem = matchingItem;
-                return true;
-            }
-
-            return false;
+        private void SavePinnedFolder()
+        {
+            // ピン留めされた項目は2回列挙するからリストにする
+            var pinnedFolders = _items
+                .Where(i => i.Pinned)
+                .Select(i => i.Source.WithPinned(pinned: true))
+                .ToList();
+            _folderList.SetPinnedFolder(pinnedFolders);
+            SettingsStorage.SavePinnedFolderList(pinnedFolders);
         }
     }
 }

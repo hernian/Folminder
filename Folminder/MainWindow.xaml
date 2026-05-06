@@ -9,21 +9,25 @@
         xmlns:helpers="clr-namespace:Folminder.Helpers"
         xmlns:tb="http://www.hardcodet.net/taskbar"
         mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel, IsDesignTimeCreatable=False}"
         Title="MainWindow" Height="200" Width="168"
         MinWidth="400"
         MinHeight="200"
         WindowStartupLocation="CenterScreen"
         Visibility="Hidden"
-        ShowInTaskbar="False"
-        KeyDown="Window_KeyDown">
+        d:Visibility="Visible"
+        ShowInTaskbar="False">
 
     <Window.Resources>
+        <!-- ViewModelへのバインディング用プロキシ -->
+        <helpers:BindingProxy x:Key="ViewModelProxy" Data="{Binding}"/>
+
         <!-- NotifyIconのコンテキストメニュー -->
         <ContextMenu x:Key="NotifyIconContextMenu">
-            <MenuItem Header="開く" Click="OpenMenuItem_Click"/>
-            <MenuItem Header="設定..." Click="SettingsMenuItem_Click"/>
+            <MenuItem Header="開く" Command="{Binding Data.OpenWindowCommand, Source={StaticResource ViewModelProxy}}"/>
+            <MenuItem Header="設定..." Command="{Binding Data.ShowSettingsCommand, Source={StaticResource ViewModelProxy}}"/>
             <Separator/>
-            <MenuItem Header="終了" Click="ExitMenuItem_Click"/>
+            <MenuItem Header="終了" Command="{Binding Data.ExitCommand, Source={StaticResource ViewModelProxy}}"/>
         </ContextMenu>
     </Window.Resources>
 
@@ -34,13 +38,14 @@
         </Grid.RowDefinitions>
 
         <!-- NotifyIcon -->
-        <tb:TaskbarIcon x:Name="notifyIcon"
+        <tb:TaskbarIcon x:Name="NotifyIcon"
                         ToolTipText="Folminder"
                         ContextMenu="{StaticResource NotifyIconContextMenu}"
-                        TrayMouseDoubleClick="NotifyIcon_TrayMouseDoubleClick"/>
+                        TrayMouseDoubleClick="NotifyIcon_TrayMouseDoubleClick"
+                        d:IsHidden="True"/>
 
         <controls:FolderListView
-            x:Name="mainListView"
+            x:Name="MainListView"
             RowItemsSource="{Binding Items}"
             SelectedRowItem="{Binding SelectedItem, Mode=TwoWay}"
             CheckBoxColumnWidth="28"
@@ -52,7 +57,7 @@
             <!-- BindingProxy：GridViewColumn に ActualWidth 系プロパティを渡すための中継 -->
             <controls:FolderListView.Resources>
                 <helpers:BindingProxy x:Key="proxy"
-                            Data="{Binding ElementName=mainListView}"/>
+                            Data="{Binding ElementName=MainListView}"/>
             </controls:FolderListView.Resources>
 
             <controls:FolderListView.View>
@@ -114,10 +119,11 @@
 
         <!-- 下端に横に3つボタンを配置 -->
         <Grid Grid.Row="1">
-            <Button x:Name="openExplorerButton" Content="エクスプローラーを開く" HorizontalAlignment="Left" Margin="10" Padding="10"/>
+            <Button x:Name="OpenExplorerButton" Content="エクスプローラーを開く" HorizontalAlignment="Left" Margin="10" Padding="10" Command="{Binding OpenExplorerCommand}"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="10">
-                <Button x:Name="cancelButton" Content="キャンセル" Margin="0,0,5,0" Padding="10" IsCancel="True"/>
-                <Button x:Name="acceptButton" Content="OK" Margin="5,0,0,0" Padding="20,10,20,10" IsDefault="True"/>
+                <Button x:Name="AcceptButton" Content="OK" Margin="3,0,3,0" Padding="20,10,20,10" IsDefault="True" Command="{Binding AcceptCommand}"/>
+                <Button x:Name="ApplyButton" Content="適用" Margin="3,0,3,0" Padding="20,10,20,10" Command="{Binding ApplyCommand}"/>
+                <Button x:Name="CancelButton" Content="キャンセル" Margin="3,0,0,0" Padding="10" IsCancel="True" Command="{Binding CancelCommand}"/>
             </StackPanel>
         </Grid>
     </Grid>

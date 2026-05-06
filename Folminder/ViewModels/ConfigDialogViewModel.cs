@@ -1,11 +1,13 @@
-﻿using Folminder.Models;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Folminder.Models;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 
 namespace Folminder.ViewModels
 {
-    public class ConfigDialogViewModel : INotifyPropertyChanged
+    public partial class ConfigDialogViewModel : ObservableObject
     {
         private static IReadOnlyList<NameKey> CreateNameKeyList()
         {
@@ -34,102 +36,52 @@ namespace Folminder.ViewModels
 
         private static readonly IReadOnlyList<NameKey> NAME_KEY_LIST = CreateNameKeyList();
 
-        public event PropertyChangedEventHandler? PropertyChanged;
-        private void NotifyPropertyChanged([CallerMemberName] String propertyName = "")
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(AcceptCommand))]
+        private bool alt = HotKey.Default.Alt;
 
-        public bool Alt
-        {
-            get => _alt;
-            set
-            {
-                if (_alt != value)
-                {
-                    _alt = value;
-                    NotifyPropertyChanged();
-                    UpdateIsOkButtonEnabled();
-                }
-            }
-        }
-        public bool Control
-        {
-            get => _control;
-            set
-            {
-                if (_control != value)
-                {
-                    _control = value;
-                    NotifyPropertyChanged();
-                    UpdateIsOkButtonEnabled();
-                }
-            }
-        }
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(AcceptCommand))]
+        private bool control = HotKey.Default.Control;
 
-        public bool Shift
-        {
-            get => _shift;
-            set
-            {
-                if (_shift != value)
-                {
-                    _shift = value;
-                    NotifyPropertyChanged();
-                    UpdateIsOkButtonEnabled();
-                }
-            }
-        }
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(AcceptCommand))]
+        private bool shift = HotKey.Default.Shift;
 
-        public bool Win
-        {
-            get => _win;
-            set
-            {
-                if (_win != value)
-                {
-                    _win = value;
-                    NotifyPropertyChanged();
-                    UpdateIsOkButtonEnabled();
-                }
-            }
-        }
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(AcceptCommand))]
+        private bool win = HotKey.Default.Win;
 
-        public bool IsOkButtonEnabled
-        {
-            get => _isOkButtonEnabled;
-            private set
-            {
-                if (_isOkButtonEnabled != value)
-                {
-                    _isOkButtonEnabled = value;
-                    NotifyPropertyChanged();
-                }
-            }
-        }
+        [ObservableProperty]
+        private bool? dialogResult;
 
         public IReadOnlyList<NameKey> Items => NAME_KEY_LIST;
         public NameKey? SelectedItem { get; set; }
 
-        private bool _alt = HotKey.Default.Alt;
-        private bool _control = HotKey.Default.Control;
-        private bool _shift = HotKey.Default.Shift;
-        private bool _win = HotKey.Default.Win;
-        private bool _isOkButtonEnabled = true;
-
         public ConfigDialogViewModel(HotKey hotKey)
         {
-            this._alt = hotKey.Alt;
-            this._control = hotKey.Control;
-            this._shift = hotKey.Shift;
-            this._win = hotKey.Win;
+            this.alt = hotKey.Alt;
+            this.control = hotKey.Control;
+            this.shift = hotKey.Shift;
+            this.win = hotKey.Win;
             this.SelectedItem = this.Items.FirstOrDefault(nk => nk.Key == hotKey.Key);
-            UpdateIsOkButtonEnabled();
         }
 
-        private void UpdateIsOkButtonEnabled()
+        [RelayCommand(CanExecute = nameof(CanAccept))]
+        private void Accept()
         {
-            IsOkButtonEnabled = _alt || _control || _shift || _win;
+            DialogResult = true;
+        }
+
+        [RelayCommand]
+        private void Cancel()
+        {
+            DialogResult = false;
+        }
+
+        private bool CanAccept()
+        {
+            return Alt || Control || Shift || Win;
         }
 
         public HotKey GetHotKey()
@@ -138,7 +90,7 @@ namespace Folminder.ViewModels
             {
                 throw new InvalidOperationException("Missing SelectedItem.");
             }
-            return new HotKey(_alt, _control, _shift, _win, this.SelectedItem.Key);
+            return new HotKey(Alt, Control, Shift, Win, this.SelectedItem.Key);
         }
     }
 }

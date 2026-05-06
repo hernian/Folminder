@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using System.Windows.Media;
 
 namespace Folminder.ViewModels
@@ -8,7 +8,7 @@ namespace Folminder.ViewModels
     /// Path から Segments を生成し、列幅に応じた TruncatedName を保持する。
     /// FolderListView 専用。外部に公開しない。
     /// </summary>
-    internal class RowItemViewModel : INotifyPropertyChanged
+    internal class RowItemViewModel : ObservableObject
     {
         // ─── ソースデータへの参照 ─────────────────────────────────────────
         public FolderViewModel Source { get; }
@@ -25,12 +25,7 @@ namespace Folminder.ViewModels
         public bool Pinned
         {
             get => Source.Pinned;
-            set
-            {
-                if (Source.Pinned == value) return;
-                Source.Pinned = value;
-                OnPropertyChanged(nameof(Pinned));
-            }
+            set => SetProperty(Source.Pinned, value, Source, (s, v) => s.Pinned = v);
         }
 
         public string Key => Source.Key;
@@ -41,12 +36,7 @@ namespace Folminder.ViewModels
         public string TruncatedName
         {
             get => _truncatedName;
-            private set
-            {
-                if (_truncatedName == value) return;
-                _truncatedName = value;
-                OnPropertyChanged(nameof(TruncatedName));
-            }
+            private set => SetProperty(ref _truncatedName, value);
         }
 
         // ─── コンストラクター ─────────────────────────────────────────────
@@ -72,12 +62,6 @@ namespace Folminder.ViewModels
             TruncatedName = TruncationHelper.Truncate(
                 Segments, columnWidth, typeface, fontSize, pixelsPerDip);
         }
-
-        // ─── INotifyPropertyChanged ───────────────────────────────────────
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        private void OnPropertyChanged(string name) =>
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }
 
