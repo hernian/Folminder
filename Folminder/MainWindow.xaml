@@ -16,7 +16,7 @@
         WindowStartupLocation="CenterScreen"
         Visibility="Hidden"
         d:Visibility="Visible"
-        ShowInTaskbar="False">
+        ShowInTaskbar="False" Icon="pack://application:,,,/Resources/folminder.ico">
 
     <Window.Resources>
         <!-- ViewModelへのバインディング用プロキシ -->
@@ -39,6 +39,7 @@
 
         <!-- NotifyIcon -->
         <tb:TaskbarIcon x:Name="NotifyIcon"
+                        IconSource="pack://application:,,,/Resources/folminder.ico"
                         ToolTipText="Folminder"
                         ContextMenu="{StaticResource NotifyIconContextMenu}"
                         TrayMouseDoubleClick="NotifyIcon_TrayMouseDoubleClick"
