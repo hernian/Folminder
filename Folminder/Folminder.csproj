@@ -62,4 +62,8 @@
     </None>
   </ItemGroup>
 
+  <Target Name="BuildInstaller" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <Exec Command="pwsh -Command &quot;cd '$(SolutionDir)Installer'; &amp; 'ISCC.exe' Folminder.iss&quot;" />
+  </Target>
+
 </Project>
