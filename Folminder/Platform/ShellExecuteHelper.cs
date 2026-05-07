@@ -9,15 +9,14 @@ namespace Folminder.Platform
     {
         public class OpenFolderException : DirectoryNotFoundException
         {
-            public string Path { get; init; }
+            public string? Path { get; init; }
 
             public OpenFolderException(string message)
                 : base(message)
             {
-                this.Path = string.Empty;
             }
 
-            public OpenFolderException(string message, string path)
+            public OpenFolderException(string message, string? path)
                 : base(message)
             {
                 this.Path = path;
@@ -43,6 +42,10 @@ namespace Folminder.Platform
         }
         public static void OpenExplorer(string? path = null)
         {
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new OpenFolderException($"Empty path.");
+            }
             if (!Directory.Exists(path))
             {
                 throw new OpenFolderException($"Directory don't exist. Path: {path}", path);

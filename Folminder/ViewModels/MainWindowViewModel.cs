@@ -20,7 +20,12 @@ namespace Folminder.ViewModels
         // 例外をメッセージへ変換するルール群
         private static readonly ExceptionHandler.IErrorToMessage[] EXCEPTION_RULES = [
             new ExceptionToMessage<ShellExecuteHelper.OpenFolderException>(
-                ex => new (MessageKind.Error, $"ディレクトリが見つかりません. {ex.Path}")),
+                ex => {
+                    var msg = string.IsNullOrEmpty(ex.Path)
+                        ? "ディレクトリが指定されていません"
+                        : $"ディレクトリが見つかりません. {ex.Path}";
+                    return new (MessageKind.Error, msg);
+                }),
             ];
 
         public event EventHandler? HideWindowRequested;
