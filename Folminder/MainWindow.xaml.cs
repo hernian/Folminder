@@ -9,6 +9,7 @@ using System.Windows.Controls;
 //using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace Folminder
@@ -51,14 +52,13 @@ namespace Folminder
             _viewModel.SettingsDialogRequested += OnSettingsDialogRequested;
             _viewModel.OpenWindowRequested += (_, __) => UpdateContents();
             _viewModel.ExitApplicationRequested += (_, __) => ReallyClose();
+            _viewModel.MessageRequested += OnToastRequested;
             _hotKeyService.HotKeyPressed += (_, __) => UpdateContents();
 
             this.SourceInitialized += MainWindow_SourceInitialized;
-            this.Loaded += MainWindow_Loaded;
             this.PreviewKeyDown += MainWindow_PreviewKeyDown;
 
             MainListView.RowDoubleClick += (_, __) => _viewModel.AcceptCommand.Execute(null);
-            MainListView.PreferredSizeChanged += MainListView_PreferredSizeChanged;
         }
 
         private void MainWindow_SourceInitialized(object? sender, EventArgs e)
@@ -84,55 +84,6 @@ namespace Folminder
 
             // HotKeyServiceを初期化（ウィンドウ登録とHotKey登録）
             _hotKeyService.Initialize(this, HOTKEY_ID);
-
-            /*
-            // まだ表示されていない状態でレイアウトを確定させる
-            this.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            this.Arrange(new Rect(0, 0, this.DesiredSize.Width, this.DesiredSize.Height));
-            this.UpdateLayout();
-            SetWindowCenter();
-            */
-        }
-
-        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
-        {
-            Debug.WriteLine($"MainWindow_Loaded. isActivated: {_isActivated}");
-            /*
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                Debug.WriteLine("MainWindow_Loaded Set MainWindow center of working area.");
-                SetWindowCenter();
-            }), DispatcherPriority.Render);
-            */
-        }
-
-        private void MainListView_PreferredSizeChanged(object? sender, EventArgs e)
-        {
-            var workingArea = ScreenHelper.GetWorkingArea(this);
-            var maxWidth = workingArea.Width * WORKING_AREA_SCALE;
-            var maxHeight = workingArea.Height * WORKING_AREA_SCALE;
-            var horzGap = this.ActualWidth - MainListView.ActualWidth;
-            var vertGap = this.ActualHeight - MainListView.ActualHeight;
-            var newWidth = horzGap + MainListView.PreferredWidth;
-            var newHeight = vertGap + MainListView.PreferredHeight;
-
-            Debug.WriteLine("=== MainListView_PreferredSizeChanged ===");
-            Debug.WriteLine($"  MainWindow.ActualWidth: {this.ActualWidth:F1}");
-            Debug.WriteLine($"  MainWindow.ActualHeight: {this.ActualHeight:F1}");
-            Debug.WriteLine($"  MainListView.ActualWidth: {MainListView.ActualWidth:F1}");
-            Debug.WriteLine($"  MainListView.ActualHeight: {MainListView.ActualHeight:F1}");
-            Debug.WriteLine($"  MainListView.PreferredWidth: {MainListView.PreferredWidth:F1}");
-            Debug.WriteLine($"  MainListView.PreferredHeight: {MainListView.PreferredHeight:F1}");
-            Debug.WriteLine($"  horzGap (Window - ListView): {horzGap:F1}");
-            Debug.WriteLine($"  vertGap (Window - ListView): {vertGap:F1}");
-            Debug.WriteLine($"  newWidth (horzGap + PreferredWidth): {newWidth:F1}");
-            Debug.WriteLine($"  newHeight (vertGap + PreferredHeight): {newHeight:F1}");
-
-            this.Width = newWidth;
-            this.Height = newHeight;
-
-            Debug.WriteLine($"  AFTER: MainWindow.Width set to: {this.Width:F1}");
-            Debug.WriteLine($"  AFTER: MainWindow.Height set to: {this.Height:F1}");
         }
 
         private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -312,6 +263,42 @@ namespace Folminder
         {
             _isActivated = true;
             _viewModel.UpdateCommand();
+        }
+
+        private void OnToastRequested(object? sender, MessageRequestedEventArgs e)
+        {
+            // XAMLで定義されたToastNotificationコントロールを取得
+            var toast = this.FindName("ToastNotification") as Controls.ToastNotification;
+            if (toast == null) return;
+
+            toast.Message = e.Message.Body;
+            toast.Type = e.Message.Kind;
+
+            // ToastTypeに応じたResourceDictionaryを取得
+            var settingsKey = e.Message.Kind == ViewModels.MessageKind.Error 
+                ? "ErrorToastSettings" 
+                : "InformationToastSettings";
+
+            if (toast.TryFindResource(settingsKey) is ResourceDictionary settings)
+            {
+                // ResourceDictionary内の各設定を取得
+                if (settings["Background"] is Brush background)
+                {
+                    toast.ToastBackground = background;
+                }
+
+                if (settings["Foreground"] is Brush foreground)
+                {
+                    toast.ToastForeground = foreground;
+                }
+
+                if (settings["Duration"] is int duration)
+                {
+                    toast.Duration = duration;
+                }
+            }
+
+            toast.Show();
         }
     }
 }

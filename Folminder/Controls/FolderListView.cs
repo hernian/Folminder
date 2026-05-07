@@ -150,7 +150,12 @@ public class FolderListView : ListView
         /// </summary>
         private readonly ObservableCollection<RowItemViewModel> _internalItems = new();
 
-    #endregion
+        /// <summary>
+        /// GridViewHeaderRowPresenterのキャッシュ。一度検索したら保持する。
+        /// </summary>
+        private GridViewHeaderRowPresenter? _cachedHeaderPresenter;
+
+        #endregion
 
     // =====================================================================
     #region コンストラクター & テンプレート
@@ -661,9 +666,14 @@ public class FolderListView : ListView
     /// </summary>
     private double GetActualHeaderHeight()
     {
-        var header = VisualTreeHelpers.FindVisualChild<GridViewHeaderRowPresenter>(this);
-        if (header?.ActualHeight > 0)
-            return header.ActualHeight;
+        // キャッシュがなければ検索して保存
+        if (_cachedHeaderPresenter == null)
+        {
+            _cachedHeaderPresenter = VisualTreeHelpers.FindVisualChild<GridViewHeaderRowPresenter>(this);
+        }
+
+        if (_cachedHeaderPresenter?.ActualHeight > 0)
+            return _cachedHeaderPresenter.ActualHeight;
 
         return FontSize + 12.0; // ヘッダーパディングの推定値
     }

@@ -13,21 +13,22 @@ namespace Folminder.ViewModels
         {
             var nameKeyList = new List<NameKey>();
             // A～Z
-            for (int i = 0; i <= 26; i++)
+            for (int i = 0; i < 26; i++)
             {
                 var ch = (char)('A' + i);
                 nameKeyList.Add(new NameKey(ch.ToString(), (Key)(Key.A + i)));
             }
             // 1～9
-            for (int i = 0; i <= 9; i++)
+            for (int i = 0; i < 9; i++)  // '1'～'9'
             {
-                var ch = (char)('0' + i);
-                nameKeyList.Add(new NameKey(ch.ToString(), (Key)(Key.A + i)));
+                var ch = (char)('1' + i);
+                nameKeyList.Add(new NameKey(ch.ToString(), (Key)(Key.D1 + i)));
             }
+            nameKeyList.Add(new NameKey('0'.ToString(), Key.D0)); // '0'
             // F1～F24
             for (int i = 0; i < 24; i++)
             {
-                nameKeyList.Add(new NameKey($"F{i}", (Key)(Key.F1 + i)));
+                nameKeyList.Add(new NameKey($"F{i + 1}", (Key)(Key.F1 + i)));
             }
             nameKeyList.Add(new NameKey("変換", Key.ImeConvert));
             nameKeyList.Add(new NameKey("無変換", Key.ImeNonConvert));
@@ -81,7 +82,7 @@ namespace Folminder.ViewModels
 
         private bool CanAccept()
         {
-            return Alt || Control || Shift || Win;
+            return HotKey.Validate(Alt, Control, Shift, Win);
         }
 
         public HotKey GetHotKey()

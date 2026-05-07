@@ -1,5 +1,6 @@
 ﻿using SHDocVw;
 using System.Data;
+using System.Diagnostics;
 
 namespace Folminder.Models
 {
@@ -67,7 +68,10 @@ namespace Folminder.Models
                     }
                     folderList.Add(new WndPath((IntPtr)win.HWND, path));
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"FolderList.GetWndPaths exception occurred. {ex}");
+                }
             }
             return folderList;
         }

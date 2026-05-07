@@ -1,4 +1,5 @@
 ﻿using Folminder.Models;
+using System.Diagnostics;
 using System.Text.Json;
 
 namespace Folminder.Platform
@@ -40,10 +41,16 @@ namespace Folminder.Platform
             {
                 var hotKeyJson = Properties.Settings.Default.HotKey;
                 var hotKey = JsonSerializer.Deserialize<HotKey>(hotKeyJson);
-                if (hotKey != null)
+                if (hotKey == null)
                 {
-                    return hotKey;
+                    return HotKey.Default;
                 }
+                if (!HotKey.Validate(hotKey))
+                {
+                    Debug.WriteLine($"SettingsStorage loaded invalid hotKey. {hotKey}");
+                    return HotKey.Default;
+                }
+                return hotKey;
             }
             catch { }
             //デフォルト値

@@ -46,6 +46,14 @@
                         TrayMouseDoubleClick="NotifyIcon_TrayMouseDoubleClick"
                         d:IsHidden="True"/>
 
+        <!-- Toast通知（最前面に表示） -->
+        <controls:ToastNotification x:Name="ToastNotification"
+                                   Grid.RowSpan="2"
+                                   Panel.ZIndex="1000"
+                                   VerticalAlignment="Top"
+                                   HorizontalAlignment="Center"
+                                   Visibility="Collapsed"/>
+
         <controls:FolderListView
             x:Name="MainListView"
             RowItemsSource="{Binding Items}"

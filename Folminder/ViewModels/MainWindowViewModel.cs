@@ -5,18 +5,31 @@ using Folminder.Platform;
 using Folminder.Services;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
+using System.Windows.Interop;
+using System.Windows.Media.Media3D;
 
 namespace Folminder.ViewModels
 {
     public partial class MainWindowViewModel : ObservableObject
     {
+        // フォルダー表示のKeyに与える文字。
+        // 各1文字がKeyになる。char配列より記述しやすいので文字列で表現する。
         private static readonly string KEY_SEQ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
 
+        // 例外をメッセージへ変換するルール群
+        private static readonly ExceptionHandler.IErrorToMessage[] EXCEPTION_RULES = [
+            new ExceptionToMessage<ShellExecuteHelper.OpenFolderException>(
+                ex => new (MessageKind.Error, $"ディレクトリが見つかりません. {ex.Path}")),
+            ];
+
         public event EventHandler? HideWindowRequested;
-        public event EventHandler<ConfigDialogViewModel>? SettingsDialogRequested;
         public event EventHandler? OpenWindowRequested;
         public event EventHandler? ExitApplicationRequested;
+        public event EventHandler<ConfigDialogViewModel>? SettingsDialogRequested;
+        public event EventHandler<MessageRequestedEventArgs>? MessageRequested;
 
+        private readonly ExceptionHandler _exceptionHandler;
         private bool _isSettingsDialogOpen = false;
 
         public ObservableCollection<FolderViewModel> Items => _items;
@@ -43,38 +56,45 @@ namespace Folminder.ViewModels
         {
             _folderList = folderList;
             _hotKeyService = hotKeyService;
+            _exceptionHandler = new ExceptionHandler(EXCEPTION_RULES, ShowMessage);
             _folderList.SetPinnedFolder(SettingsStorage.LoadPinnedFolderList());
         }
 
         public void UpdateCommand()
         {
-            _items.Clear();
-            var index = 0;
-            var sortedFolders = _folderList.GetFolderList().OrderBy(x => x).Take(KEY_SEQ.Length);
-            foreach (var folder in sortedFolders)
+            _exceptionHandler.CommandHarness(() =>
             {
-                var key = KEY_SEQ[index].ToString();
-                var item = new FolderViewModel(key, folder);
-                _items.Add(item);
-                index++;
-            }
-            this.OnPropertyChanged(nameof(Items));
+                _items.Clear();
+                var index = 0;
+                var sortedFolders = _folderList.GetFolderList().OrderBy(x => x).Take(KEY_SEQ.Length);
+                foreach (var folder in sortedFolders)
+                {
+                    var key = KEY_SEQ[index].ToString();
+                    var item = new FolderViewModel(key, folder);
+                    _items.Add(item);
+                    index++;
+                }
+                this.OnPropertyChanged(nameof(Items));
+            });
         }
 
         [RelayCommand(CanExecute = nameof(CanShowSettings))]
         private void ShowSettings()
         {
-            var currentHotKey = _hotKeyService.CurrentHotKey;
-            var configDialogViewModel = new ConfigDialogViewModel(currentHotKey);
+            _exceptionHandler.CommandHarness(() =>
+            {
+                var currentHotKey = _hotKeyService.CurrentHotKey;
+                var configDialogViewModel = new ConfigDialogViewModel(currentHotKey);
 
-            _isSettingsDialogOpen = true;
-            ShowSettingsCommand.NotifyCanExecuteChanged();
+                _isSettingsDialogOpen = true;
+                ShowSettingsCommand.NotifyCanExecuteChanged();
 
-            // Viewにダイアログ表示を要求
-            SettingsDialogRequested?.Invoke(this, configDialogViewModel);
+                // Viewにダイアログ表示を要求
+                SettingsDialogRequested?.Invoke(this, configDialogViewModel);
 
-            _isSettingsDialogOpen = false;
-            ShowSettingsCommand.NotifyCanExecuteChanged();
+                _isSettingsDialogOpen = false;
+                ShowSettingsCommand.NotifyCanExecuteChanged();
+            });
         }
 
         private bool CanShowSettings()
@@ -85,13 +105,19 @@ namespace Folminder.ViewModels
         [RelayCommand]
         private void OpenWindow()
         {
-            this.OpenWindowRequested?.Invoke(this, EventArgs.Empty);
+            _exceptionHandler.CommandHarness(() =>
+            {
+                this.OpenWindowRequested?.Invoke(this, EventArgs.Empty);
+            });
         }
 
         [RelayCommand]
         private void Exit()
         {
-            this.ExitApplicationRequested?.Invoke(this, EventArgs.Empty);
+            _exceptionHandler.CommandHarness(() =>
+            {
+                this.ExitApplicationRequested?.Invoke(this, EventArgs.Empty);
+            });
         }
 
         /// <summary>
@@ -100,11 +126,14 @@ namespace Folminder.ViewModels
         [RelayCommand(CanExecute = nameof(CanActivate))]
         private void Accept()
         {
-            // VerbにOpenを指定してパス名を与えればExplorerが良くしてくれる。
-            var path = this.SelectedItem!.Path;
-            ShellExecuteHelper.OpenFolder(path);
-            SavePinnedFolder();
-            this.HideWindowRequested?.Invoke(this, EventArgs.Empty);
+            _exceptionHandler.CommandHarness(() =>
+            {
+                // VerbにOpenを指定してパス名を与えればExplorerが良くしてくれる。
+                var path = this.SelectedItem!.Path;
+                ShellExecuteHelper.OpenFolder(path);
+                SavePinnedFolder();
+                this.HideWindowRequested?.Invoke(this, EventArgs.Empty);
+            });
         }
 
         private bool CanActivate()
@@ -121,9 +150,12 @@ namespace Folminder.ViewModels
         [RelayCommand]
         private void OpenExplorer()
         {
-            // ShellExecuteHelper.OpenExplorer();
-            ShellExecuteHelper.OpenFolder(ShellExecuteHelper.GUID_PC);
-            this.HideWindowRequested?.Invoke(this, EventArgs.Empty);
+            _exceptionHandler.CommandHarness(() =>
+            {
+                // ShellExecuteHelper.OpenExplorer();
+                ShellExecuteHelper.OpenFolder(ShellExecuteHelper.GUID_PC);
+                this.HideWindowRequested?.Invoke(this, EventArgs.Empty);
+            });
         }
 
         /// <summary>
@@ -132,8 +164,12 @@ namespace Folminder.ViewModels
         [RelayCommand(CanExecute = nameof(CanActivate))]
         private void Apply()
         {
-            SavePinnedFolder();
-            // ウィンドウを閉じない（適用ボタンの一般的な動作）
+            _exceptionHandler.CommandHarness(() =>
+            {
+                SavePinnedFolder();
+                ShowMessage(new Message(MessageKind.Information, "ピン留めされたフォルダー一覧を保存しました"));
+                // ウィンドウを閉じない（適用ボタンの一般的な動作
+            });
         }
 
         private void SavePinnedFolder()
@@ -145,6 +181,16 @@ namespace Folminder.ViewModels
                 .ToList();
             _folderList.SetPinnedFolder(pinnedFolders);
             SettingsStorage.SavePinnedFolderList(pinnedFolders);
+        }
+
+        /// <summary>
+        /// メッセージを表示します
+        /// </summary>
+        /// <param name="message">表示するメッセージ</param>
+        /// <param name="messageType">メッセージの種類（Error/Information）</param>
+        public void ShowMessage(Message message)
+        {
+            MessageRequested?.Invoke(this, new MessageRequestedEventArgs(message));
         }
     }
 }
