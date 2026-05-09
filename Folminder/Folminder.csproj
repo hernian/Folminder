@@ -7,6 +7,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Resources\folminder.ico</ApplicationIcon>
+    <AssemblyVersion>1.0.0.1</AssemblyVersion>
+    <FileVersion>1.0.0.1</FileVersion>
+    <Company>Hernian</Company>
+    <PackageIcon>128.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,6 +40,13 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\folminder.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\icon\128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

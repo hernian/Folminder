@@ -2,11 +2,13 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 
 namespace Folminder.Platform
 {
     public static class ShellExecuteHelper
     {
+        private static readonly Regex GUID_PATTERN = new(@"^::\{[0-9A-Fa-f]{8}-([0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}\}$");
         public class OpenFolderException : DirectoryNotFoundException
         {
             public string? Path { get; init; }
@@ -28,7 +30,7 @@ namespace Folminder.Platform
 
         public static void OpenFolder(string path)
         {
-            if (!Directory.Exists(path))
+            if (!GUID_PATTERN.IsMatch(path) && !Directory.Exists(path))
             {
                 throw new OpenFolderException($"Directory don't exist. Path: {path}", path);
             }
@@ -46,7 +48,7 @@ namespace Folminder.Platform
             {
                 throw new OpenFolderException($"Empty path.");
             }
-            if (!Directory.Exists(path))
+            if (!GUID_PATTERN.IsMatch(path) && !Directory.Exists(path))
             {
                 throw new OpenFolderException($"Directory don't exist. Path: {path}", path);
             }

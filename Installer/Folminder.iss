@@ -1,4 +1,4 @@
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 
 [Setup]
 AppId={{C1818027-ECCB-4994-8151-CE3EA752EAFC}
@@ -10,7 +10,7 @@ VersionInfoVersion={#MyAppVersion}
 DefaultDirName={localappdata}\Hernian\Folminder
 DefaultGroupName=Folminder
 OutputDir=Output
-OutputBaseFilename=folminder_setup
+OutputBaseFilename=folminder_setup{#MyAppVersion}
 Compression=lzma2
 SolidCompression=yes
 PrivilegesRequired=lowest
